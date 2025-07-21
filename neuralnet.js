@@ -1,4 +1,3 @@
-// TurboWarp Third-Party Extension: Simple Neural Network
 (function(Scratch) {
     'use strict';
 
@@ -7,10 +6,14 @@
             this.inputSize = inputSize;
             this.hiddenSize = hiddenSize;
             this.outputSize = outputSize;
-            this.w1 = this.randomMatrix(inputSize, hiddenSize);
-            this.b1 = this.zeros(hiddenSize);
-            this.w2 = this.randomMatrix(hiddenSize, outputSize);
-            this.b2 = this.zeros(outputSize);
+            this.reset();
+        }
+
+        reset() {
+            this.w1 = this.randomMatrix(this.inputSize, this.hiddenSize);
+            this.b1 = this.zeros(this.hiddenSize);
+            this.w2 = this.randomMatrix(this.hiddenSize, this.outputSize);
+            this.b2 = this.zeros(this.outputSize);
         }
 
         randomMatrix(rows, cols) {
@@ -28,11 +31,11 @@
         }
 
         forward(input) {
-            this.z1 = this.addVec(this.dot(input, this.w1), this.b1);
-            this.a1 = this.z1.map(this.sigmoid);
-            this.z2 = this.addVec(this.dot(this.a1, this.w2), this.b2);
-            this.a2 = this.z2.map(this.sigmoid);
-            return this.a2;
+            const z1 = this.addVec(this.dot(input, this.w1), this.b1);
+            const a1 = z1.map(this.sigmoid);
+            const z2 = this.addVec(this.dot(a1, this.w2), this.b2);
+            const a2 = z2.map(this.sigmoid);
+            return a2;
         }
 
         dot(vec, matrix) {
@@ -52,13 +55,13 @@
         }
     }
 
-    const nn = new SimpleNN();
+    let model = new SimpleNN();
 
-    class NeuralNetExtension {
+    class NeuralNetworkExtension {
         getInfo() {
             return {
                 id: 'neuralnet',
-                name: 'Neural Net',
+                name: 'Neural Network',
                 color1: '#5BA58C',
                 color2: '#47806F',
                 blocks: [
@@ -72,6 +75,46 @@
                                 defaultValue: '0.5,0.8'
                             }
                         }
+                    },
+                    {
+                        opcode: 'resetModel',
+                        blockType: Scratch.BlockType.COMMAND,
+                        text: 'reset model'
+                    },
+                    {
+                        opcode: 'getWeight',
+                        blockType: Scratch.BlockType.REPORTER,
+                        text: 'get weight at layer [LAYER] node [INDEX]',
+                        arguments: {
+                            LAYER: {
+                                type: Scratch.ArgumentType.NUMBER,
+                                defaultValue: 1
+                            },
+                            INDEX: {
+                                type: Scratch.ArgumentType.NUMBER,
+                                defaultValue: 0
+                            }
+                        }
+                    },
+                    {
+                        opcode: 'numInputs',
+                        blockType: Scratch.BlockType.REPORTER,
+                        text: 'number of inputs'
+                    },
+                    {
+                        opcode: 'setModelSize',
+                        blockType: Scratch.BlockType.COMMAND,
+                        text: 'set inputs to [INPUTS] and hidden to [HIDDEN]',
+                        arguments: {
+                            INPUTS: {
+                                type: Scratch.ArgumentType.NUMBER,
+                                defaultValue: 2
+                            },
+                            HIDDEN: {
+                                type: Scratch.ArgumentType.NUMBER,
+                                defaultValue: 4
+                            }
+                        }
                     }
                 ]
             };
@@ -79,14 +122,39 @@
 
         predict(args) {
             const inputArray = args.INPUTS.split(',').map(Number);
-            if (inputArray.length !== nn.inputSize) {
-                return 'Error: Needs ' + nn.inputSize + ' inputs';
+            if (inputArray.length !== model.inputSize) {
+                return 'Error: Expected ' + model.inputSize + ' inputs';
             }
-
-            const result = nn.forward(inputArray);
+            const result = model.forward(inputArray);
             return result[0].toFixed(4);
+        }
+
+        resetModel() {
+            model.reset();
+        }
+
+        getWeight(args) {
+            const layer = Number(args.LAYER);
+            const index = Number(args.INDEX);
+            if (layer === 1 && index < model.w1.length) {
+                return model.w1[index][0].toFixed(3);
+            }
+            if (layer === 2 && index < model.w2.length) {
+                return model.w2[index][0].toFixed(3);
+            }
+            return 'NaN';
+        }
+
+        numInputs() {
+            return model.inputSize;
+        }
+
+        setModelSize(args) {
+            const inputs = Math.max(1, parseInt(args.INPUTS));
+            const hidden = Math.max(1, parseInt(args.HIDDEN));
+            model = new SimpleNN(inputs, hidden, 1);
         }
     }
 
-    Scratch.extensions.register(new NeuralNetExtension());
+    Scratch.extensions.register(new NeuralNetworkExtension());
 })(Scratch);
