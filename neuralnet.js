@@ -1,5 +1,9 @@
-(function(Scratch) {
+(function (Scratch) {
     'use strict';
+
+    if (!Scratch.extensions.unsandboxed) {
+        throw new Error('This extension must be run unsandboxed');
+    }
 
     class SimpleNN {
         constructor(inputSize = 2, hiddenSize = 4, outputSize = 1) {
@@ -55,7 +59,7 @@
         }
     }
 
-    let model = new SimpleNN();
+    const model = new SimpleNN();
 
     class NeuralNetworkExtension {
         getInfo() {
@@ -72,7 +76,7 @@
                         arguments: {
                             INPUTS: {
                                 type: Scratch.ArgumentType.STRING,
-                                defaultValue: '0.5,0.8'
+                                defaultValue: '0.5, 0.8'
                             }
                         }
                     },
@@ -82,35 +86,15 @@
                         text: 'reset model'
                     },
                     {
-                        opcode: 'getWeight',
+                        opcode: 'modelInfo',
                         blockType: Scratch.BlockType.REPORTER,
-                        text: 'get weight at layer [LAYER] node [INDEX]',
+                        text: 'model: inputs [IN], hidden [H]',
                         arguments: {
-                            LAYER: {
-                                type: Scratch.ArgumentType.NUMBER,
-                                defaultValue: 1
-                            },
-                            INDEX: {
-                                type: Scratch.ArgumentType.NUMBER,
-                                defaultValue: 0
-                            }
-                        }
-                    },
-                    {
-                        opcode: 'numInputs',
-                        blockType: Scratch.BlockType.REPORTER,
-                        text: 'number of inputs'
-                    },
-                    {
-                        opcode: 'setModelSize',
-                        blockType: Scratch.BlockType.COMMAND,
-                        text: 'set inputs to [INPUTS] and hidden to [HIDDEN]',
-                        arguments: {
-                            INPUTS: {
+                            IN: {
                                 type: Scratch.ArgumentType.NUMBER,
                                 defaultValue: 2
                             },
-                            HIDDEN: {
+                            H: {
                                 type: Scratch.ArgumentType.NUMBER,
                                 defaultValue: 4
                             }
@@ -123,8 +107,9 @@
         predict(args) {
             const inputArray = args.INPUTS.split(',').map(Number);
             if (inputArray.length !== model.inputSize) {
-                return 'Error: Expected ' + model.inputSize + ' inputs';
+                return `Error: Need ${model.inputSize} inputs`;
             }
+
             const result = model.forward(inputArray);
             return result[0].toFixed(4);
         }
@@ -133,26 +118,8 @@
             model.reset();
         }
 
-        getWeight(args) {
-            const layer = Number(args.LAYER);
-            const index = Number(args.INDEX);
-            if (layer === 1 && index < model.w1.length) {
-                return model.w1[index][0].toFixed(3);
-            }
-            if (layer === 2 && index < model.w2.length) {
-                return model.w2[index][0].toFixed(3);
-            }
-            return 'NaN';
-        }
-
-        numInputs() {
-            return model.inputSize;
-        }
-
-        setModelSize(args) {
-            const inputs = Math.max(1, parseInt(args.INPUTS));
-            const hidden = Math.max(1, parseInt(args.HIDDEN));
-            model = new SimpleNN(inputs, hidden, 1);
+        modelInfo(args) {
+            return `Inputs: ${model.inputSize}, Hidden: ${model.hiddenSize}`;
         }
     }
 
